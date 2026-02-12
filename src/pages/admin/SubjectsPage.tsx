@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -31,14 +31,46 @@ const SubjectsPage = () => {
 
   const handleAddSubject = (e: React.FormEvent) => {
     e.preventDefault();
-    storage.addSubject({
+    const subjectData = {
       ...newSubject,
-      classes: newSubject.classes.split(',').map(c => c.trim()), // Basic CSV parsing
-    });
+      classes: newSubject.classes.split(',').map(c => c.trim()),
+    };
+    if (newSubject.id) {
+      storage.updateSubject(subjectData as Subject);
+      toast.success("Subject updated successfully");
+    } else {
+      storage.addSubject(subjectData);
+      toast.success("Subject added successfully");
+    }
     setSubjects(storage.getSubjects());
     setOpen(false);
-    setNewSubject({ name: '', code: '', teacher: '', classes: '' });
-    toast.success("Subject added successfully");
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setNewSubject({
+      id: undefined,
+      name: '',
+      code: '',
+      teacher: '',
+      classes: ''
+    } as any);
+  };
+
+  const handleEdit = (subject: Subject) => {
+    setNewSubject({
+      ...subject,
+      classes: subject.classes.join(', '),
+    } as any);
+    setOpen(true);
+  };
+
+  const handleDelete = (id: number) => {
+    if (confirm('Are you sure you want to delete this subject?')) {
+      storage.deleteSubject(id);
+      setSubjects(storage.getSubjects());
+      toast.success("Subject deleted successfully");
+    }
   };
 
   return (
@@ -49,14 +81,14 @@ const SubjectsPage = () => {
           <p className="page-subtitle">Manage subjects and teacher assignments</p>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(val) => { setOpen(val); if (!val) resetForm(); }}>
           <DialogTrigger asChild>
             <Button><Plus size={16} className="mr-1.5" /> Add Subject</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Add New Subject</DialogTitle>
-              <DialogDescription>Enter subject details below.</DialogDescription>
+              <DialogTitle>{newSubject.id ? 'Edit Subject' : 'Add New Subject'}</DialogTitle>
+              <DialogDescription>{newSubject.id ? 'Update subject details.' : 'Enter subject details below.'}</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddSubject} className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
@@ -107,7 +139,8 @@ const SubjectsPage = () => {
                     </div>
                   </td>
                   <td className="py-3 px-3 text-right">
-                    <Button variant="ghost" size="sm">Edit</Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(s)}>Edit</Button>
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(s.id)}>Delete</Button>
                   </td>
                 </tr>
               ))}

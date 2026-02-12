@@ -145,6 +145,19 @@ export const storage = {
         localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(updated));
         return newItem;
     },
+    updateStudent: (student: Student) => {
+        const items = storage.getStudents();
+        const index = items.findIndex(s => s.id === student.id);
+        if (index !== -1) {
+            items[index] = student;
+            localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(items));
+        }
+    },
+    deleteStudent: (id: number) => {
+        const items = storage.getStudents();
+        const updated = items.filter(s => s.id !== id);
+        localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(updated));
+    },
 
     // --- Classes ---
     getClasses: (): ClassEntity[] => {
@@ -162,6 +175,19 @@ export const storage = {
         localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(updated));
         return newItem;
     },
+    updateClass: (cls: ClassEntity) => {
+        const items = storage.getClasses();
+        const index = items.findIndex(c => c.id === cls.id);
+        if (index !== -1) {
+            items[index] = cls;
+            localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(items));
+        }
+    },
+    deleteClass: (id: number) => {
+        const items = storage.getClasses();
+        const updated = items.filter(c => c.id !== id);
+        localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(updated));
+    },
 
     // --- Subjects ---
     getSubjects: (): Subject[] => {
@@ -178,6 +204,19 @@ export const storage = {
         const updated = [...items, newItem];
         localStorage.setItem(STORAGE_KEYS.SUBJECTS, JSON.stringify(updated));
         return newItem;
+    },
+    updateSubject: (subj: Subject) => {
+        const items = storage.getSubjects();
+        const index = items.findIndex(s => s.id === subj.id);
+        if (index !== -1) {
+            items[index] = subj;
+            localStorage.setItem(STORAGE_KEYS.SUBJECTS, JSON.stringify(items));
+        }
+    },
+    deleteSubject: (id: number) => {
+        const items = storage.getSubjects();
+        const updated = items.filter(s => s.id !== id);
+        localStorage.setItem(STORAGE_KEYS.SUBJECTS, JSON.stringify(updated));
     },
 
     // --- Users ---

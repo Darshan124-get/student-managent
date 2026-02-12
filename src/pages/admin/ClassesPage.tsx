@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Users, BookOpen } from 'lucide-react';
+import { Plus, Users, BookOpen, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -33,18 +33,42 @@ const ClassesPage = () => {
 
   const handleAddClass = (e: React.FormEvent) => {
     e.preventDefault();
-    storage.addClass(newClass);
+    if (newClass.id) {
+      storage.updateClass(newClass as ClassEntity);
+      toast.success("Class updated successfully");
+    } else {
+      storage.addClass(newClass);
+      toast.success("Class added successfully");
+    }
     setClasses(storage.getClasses());
     setOpen(false);
+    resetForm();
+  };
+
+  const resetForm = () => {
     setNewClass({
+      id: undefined,
       name: '',
       section: '',
       grade: '',
       teacher: '',
       students: 0,
       subjects: 0,
-    });
-    toast.success("Class added successfully");
+    } as any);
+  };
+
+  const handleEdit = (cls: ClassEntity) => {
+    setNewClass(cls);
+    setOpen(true);
+  };
+
+  const handleDelete = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm('Are you sure you want to delete this class?')) {
+      storage.deleteClass(id);
+      setClasses(storage.getClasses());
+      toast.success("Class deleted successfully");
+    }
   };
 
   return (
@@ -55,14 +79,14 @@ const ClassesPage = () => {
           <p className="page-subtitle">Create and manage classes, sections, and assignments</p>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(val) => { setOpen(val); if (!val) resetForm(); }}>
           <DialogTrigger asChild>
             <Button><Plus size={16} className="mr-1.5" /> Add Class</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Add New Class</DialogTitle>
-              <DialogDescription>Enter class details below.</DialogDescription>
+              <DialogTitle>{newClass.id ? 'Edit Class' : 'Add New Class'}</DialogTitle>
+              <DialogDescription>{newClass.id ? 'Update class details.' : 'Enter class details below.'}</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddClass} className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
@@ -97,11 +121,14 @@ const ClassesPage = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {classes.map(cls => (
-          <div key={cls.id} className="stat-card cursor-pointer group">
+          <div key={cls.id} className="stat-card cursor-pointer group" onClick={() => handleEdit(cls)}>
             <div className="flex items-start justify-between mb-3">
               <h3 className="font-heading font-semibold text-foreground text-lg">{cls.name}</h3>
               <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium">Grade {cls.grade}</span>
             </div>
+            <Button variant="ghost" size="sm" className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0" onClick={(e) => handleDelete(cls.id, e)}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
             <p className="text-sm text-muted-foreground mb-4">Homeroom: {cls.teacher}</p>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1"><Users size={14} /> {cls.students} students</span>

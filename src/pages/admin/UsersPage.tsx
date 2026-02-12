@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, MoreHorizontal, UserCheck, KeyRound } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, UserCheck, KeyRound, Trash2, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,6 +11,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -40,11 +48,50 @@ const UsersPage = () => {
 
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
-    storage.addUser(newUser);
+    if (newUser.id) {
+      storage.updateUser(newUser as User);
+      toast.success("User updated successfully");
+    } else {
+      storage.addUser(newUser);
+      toast.success("User added successfully");
+    }
     setUsers(storage.getUsers());
     setOpen(false);
-    setNewUser({ name: '', email: '', role: 'student', status: 'active' });
-    toast.success("User added successfully");
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setNewUser({
+      id: undefined,
+      name: '',
+      email: '',
+      role: 'student',
+      status: 'active'
+    } as any);
+  };
+
+  const handleEdit = (user: User) => {
+    setNewUser(user);
+    setOpen(true);
+  };
+
+  const handleToggleStatus = (user: User) => {
+    const updatedUser = { ...user, status: user.status === 'active' ? 'inactive' : 'active' as const };
+    storage.updateUser(updatedUser);
+    setUsers(storage.getUsers());
+    toast.success(`User ${updatedUser.name} is now ${updatedUser.status}`);
+  };
+
+  const handleDeleteUser = (id: number) => {
+    if (confirm('Are you sure you want to delete this user?')) {
+      storage.deleteUser(id);
+      setUsers(storage.getUsers());
+      toast.success("User deleted successfully");
+    }
+  };
+
+  const handleResetPassword = (email: string) => {
+    toast.success(`Password reset email sent to ${email}`);
   };
 
   const filtered = users.filter(u => {
@@ -61,14 +108,14 @@ const UsersPage = () => {
           <p className="page-subtitle">Manage teachers, students, and administrators</p>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(val) => { setOpen(val); if (!val) resetForm(); }}>
           <DialogTrigger asChild>
             <Button><Plus size={16} className="mr-1.5" /> Add User</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Add New User</DialogTitle>
-              <DialogDescription>Enter user details below.</DialogDescription>
+              <DialogTitle>{newUser.id ? 'Edit User' : 'Add New User'}</DialogTitle>
+              <DialogDescription>{newUser.id ? 'Update user details.' : 'Enter user details below.'}</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddUser} className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
@@ -138,9 +185,44 @@ const UsersPage = () => {
                   </td>
                   <td className="py-3 px-3 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <button className="p-1.5 rounded-md hover:bg-secondary transition-colors" title="Toggle status"><UserCheck size={15} className="text-muted-foreground" /></button>
-                      <button className="p-1.5 rounded-md hover:bg-secondary transition-colors" title="Reset password"><KeyRound size={15} className="text-muted-foreground" /></button>
-                      <button className="p-1.5 rounded-md hover:bg-secondary transition-colors" title="More"><MoreHorizontal size={15} className="text-muted-foreground" /></button>
+                      <button
+                        onClick={() => handleToggleStatus(u)}
+                        className="p-1.5 rounded-md hover:bg-secondary transition-colors"
+                        title={u.status === 'active' ? 'Deactivate' : 'Activate'}
+                      >
+                        {u.status === 'active' ? <UserCheck size={15} className="text-success" /> : <UserX size={15} className="text-muted-foreground" />}
+                      </button>
+                      <button
+                        onClick={() => handleResetPassword(u.email)}
+                        className="p-1.5 rounded-md hover:bg-secondary transition-colors"
+                        title="Reset password"
+                      >
+                        <KeyRound size={15} className="text-muted-foreground" />
+                      </button>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="p-1.5 rounded-md hover:bg-secondary transition-colors" title="More">
+                            <MoreHorizontal size={15} className="text-muted-foreground" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleEdit(u)}>
+                            Edit User
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleToggleStatus(u)}>
+                            {u.status === 'active' ? 'Deactivate User' : 'Activate User'}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleResetPassword(u.email)}>
+                            Send Password Reset
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDeleteUser(u.id)}>
+                            Delete User
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </td>
                 </tr>

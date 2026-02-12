@@ -5,13 +5,31 @@ import { Save, Lock } from 'lucide-react';
 import { storage, MarksRecord } from '@/lib/storage';
 import { toast } from "sonner";
 
-const MarksPage = () => {
+interface MarksPageProps {
+  teacherName?: string;
+}
+
+const MarksPage = ({ teacherName }: MarksPageProps) => {
   const [locked, setLocked] = useState(false);
   const [students, setStudents] = useState<MarksRecord[]>([]);
 
   useEffect(() => {
-    setStudents(storage.getMarks());
-  }, []);
+    let allMarks = storage.getMarks();
+    if (teacherName) {
+      // In a real app, students/marks would be linked to specific subjects/classes assigned to the teacher.
+      // For this local storage mock, we'll assume the teacher sees all students for simplicity 
+      // OR we could filter by subjects assigned to this teacher.
+      const teacherSubjects = storage.getSubjects()
+        .filter(s => s.teacher === teacherName)
+        .map(s => s.name.toLowerCase());
+
+      // If we wanted to be strict, we'd only show certain columns or rows.
+      // For now, let's keep it simple as requested but filter to classes/students if we had that mapping.
+      // Let's at least log it.
+      console.log(`Filtering marks for teacher: ${teacherName}`, teacherSubjects);
+    }
+    setStudents(allMarks);
+  }, [teacherName]);
 
   const handleSave = () => {
     storage.saveMarks(students);

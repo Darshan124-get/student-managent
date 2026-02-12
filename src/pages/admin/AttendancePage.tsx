@@ -4,23 +4,47 @@ import { storage } from '@/lib/storage';
 
 type Status = 'present' | 'absent' | 'late';
 
-const AttendancePage = () => {
+interface AttendancePageProps {
+  teacherName?: string;
+}
+
+const AttendancePage = ({ teacherName }: AttendancePageProps) => {
   const [date] = useState(new Date().toISOString().split('T')[0]);
   const [students, setStudents] = useState<string[]>([]);
   const [attendance, setAttendance] = useState<Record<string, Status>>({});
 
   useEffect(() => {
-    const studentList = storage.getStudents().map(s => s.name);
+    let allStudents = storage.getStudents();
+
+    if (teacherName) {
+      // Filter students who are in classes assigned to this teacher
+      const teacherClasses = storage.getClasses()
+        .filter(c => c.teacher === teacherName)
+        .map(c => c.name);
+
+      allStudents = allStudents.filter(s => teacherClasses.includes(s.class));
+    }
+
+    const studentList = allStudents.map(s => s.name);
     setStudents(studentList);
 
     const savedAttendance = storage.getAttendance(date);
     if (savedAttendance) {
-      setAttendance(savedAttendance);
+      // Filter saved attendance to only include students the teacher can see
+      const filteredAttendance: Record<string, Status> = {};
+      studentList.forEach(name => {
+        if (savedAttendance[name]) {
+          filteredAttendance[name] = savedAttendance[name];
+        } else {
+          filteredAttendance[name] = 'present';
+        }
+      });
+      setAttendance(filteredAttendance);
     } else {
       // Initialize with present
       setAttendance(Object.fromEntries(studentList.map(s => [s, 'present'])));
     }
-  }, [date]);
+  }, [date, teacherName]);
 
   const toggle = (name: string) => {
     setAttendance(prev => {
