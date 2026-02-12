@@ -1,17 +1,52 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Users, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-const mockClasses = [
-  { id: 1, name: 'Class 10-A', section: 'A', grade: '10', teacher: 'Mr. James Wilson', students: 35, subjects: 6 },
-  { id: 2, name: 'Class 10-B', section: 'B', grade: '10', teacher: 'Ms. Linda Chen', students: 32, subjects: 6 },
-  { id: 3, name: 'Class 11-A', section: 'A', grade: '11', teacher: 'Mr. James Wilson', students: 28, subjects: 7 },
-  { id: 4, name: 'Class 11-B', section: 'B', grade: '11', teacher: 'Mr. Robert Brown', students: 30, subjects: 7 },
-  { id: 5, name: 'Class 12-A', section: 'A', grade: '12', teacher: 'Ms. Linda Chen', students: 25, subjects: 5 },
-  { id: 6, name: 'Class 12-B', section: 'B', grade: '12', teacher: 'Mr. Robert Brown', students: 27, subjects: 5 },
-];
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { storage, ClassEntity } from '@/lib/storage';
+import { toast } from "sonner";
 
 const ClassesPage = () => {
+  const [classes, setClasses] = useState<ClassEntity[]>([]);
+  const [open, setOpen] = useState(false);
+  const [newClass, setNewClass] = useState({
+    name: '',
+    section: '',
+    grade: '',
+    teacher: '',
+    students: 0,
+    subjects: 0,
+  });
+
+  useEffect(() => {
+    setClasses(storage.getClasses());
+  }, []);
+
+  const handleAddClass = (e: React.FormEvent) => {
+    e.preventDefault();
+    storage.addClass(newClass);
+    setClasses(storage.getClasses());
+    setOpen(false);
+    setNewClass({
+      name: '',
+      section: '',
+      grade: '',
+      teacher: '',
+      students: 0,
+      subjects: 0,
+    });
+    toast.success("Class added successfully");
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -19,11 +54,49 @@ const ClassesPage = () => {
           <h1 className="page-header">Class Management</h1>
           <p className="page-subtitle">Create and manage classes, sections, and assignments</p>
         </div>
-        <Button><Plus size={16} className="mr-1.5" /> Add Class</Button>
+
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus size={16} className="mr-1.5" /> Add Class</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Class</DialogTitle>
+              <DialogDescription>Enter class details below.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleAddClass} className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">Name</Label>
+                <Input id="name" value={newClass.name} onChange={e => setNewClass({ ...newClass, name: e.target.value })} className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="grade" className="text-right">Grade</Label>
+                <Input id="grade" value={newClass.grade} onChange={e => setNewClass({ ...newClass, grade: e.target.value })} className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="section" className="text-right">Section</Label>
+                <Input id="section" value={newClass.section} onChange={e => setNewClass({ ...newClass, section: e.target.value })} className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="teacher" className="text-right">Teacher</Label>
+                <Input id="teacher" value={newClass.teacher} onChange={e => setNewClass({ ...newClass, teacher: e.target.value })} className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="students" className="text-right">Students</Label>
+                <Input type="number" id="students" value={newClass.students} onChange={e => setNewClass({ ...newClass, students: parseInt(e.target.value) })} className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="subjects" className="text-right">Subjects</Label>
+                <Input type="number" id="subjects" value={newClass.subjects} onChange={e => setNewClass({ ...newClass, subjects: parseInt(e.target.value) })} className="col-span-3" required />
+              </div>
+              <DialogFooter><Button type="submit">Save changes</Button></DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {mockClasses.map(cls => (
+        {classes.map(cls => (
           <div key={cls.id} className="stat-card cursor-pointer group">
             <div className="flex items-start justify-between mb-3">
               <h3 className="font-heading font-semibold text-foreground text-lg">{cls.name}</h3>

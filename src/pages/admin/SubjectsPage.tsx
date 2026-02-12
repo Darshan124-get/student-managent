@@ -1,16 +1,46 @@
+import { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-const subjects = [
-  { id: 1, name: 'Mathematics', code: 'MATH101', teacher: 'Mr. James Wilson', classes: ['10-A', '10-B', '11-A'] },
-  { id: 2, name: 'Science', code: 'SCI101', teacher: 'Ms. Linda Chen', classes: ['10-A', '10-B'] },
-  { id: 3, name: 'English', code: 'ENG101', teacher: 'Mr. Robert Brown', classes: ['10-A', '10-B', '11-A', '11-B'] },
-  { id: 4, name: 'Physics', code: 'PHY201', teacher: 'Ms. Linda Chen', classes: ['11-A', '11-B', '12-A'] },
-  { id: 5, name: 'Chemistry', code: 'CHM201', teacher: 'Mr. Robert Brown', classes: ['11-A', '12-A', '12-B'] },
-  { id: 6, name: 'History', code: 'HIS101', teacher: 'Mr. James Wilson', classes: ['10-A', '11-B'] },
-];
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { storage, Subject } from '@/lib/storage';
+import { toast } from "sonner";
 
 const SubjectsPage = () => {
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [open, setOpen] = useState(false);
+  const [newSubject, setNewSubject] = useState({
+    name: '',
+    code: '',
+    teacher: '',
+    classes: '', // Simplified for input as string, will split for storage if needed, but keeping simple for now
+  });
+
+  useEffect(() => {
+    setSubjects(storage.getSubjects());
+  }, []);
+
+  const handleAddSubject = (e: React.FormEvent) => {
+    e.preventDefault();
+    storage.addSubject({
+      ...newSubject,
+      classes: newSubject.classes.split(',').map(c => c.trim()), // Basic CSV parsing
+    });
+    setSubjects(storage.getSubjects());
+    setOpen(false);
+    setNewSubject({ name: '', code: '', teacher: '', classes: '' });
+    toast.success("Subject added successfully");
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -18,7 +48,37 @@ const SubjectsPage = () => {
           <h1 className="page-header">Subject Management</h1>
           <p className="page-subtitle">Manage subjects and teacher assignments</p>
         </div>
-        <Button><Plus size={16} className="mr-1.5" /> Add Subject</Button>
+
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus size={16} className="mr-1.5" /> Add Subject</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Subject</DialogTitle>
+              <DialogDescription>Enter subject details below.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleAddSubject} className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">Name</Label>
+                <Input id="name" value={newSubject.name} onChange={e => setNewSubject({ ...newSubject, name: e.target.value })} className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="code" className="text-right">Code</Label>
+                <Input id="code" value={newSubject.code} onChange={e => setNewSubject({ ...newSubject, code: e.target.value })} className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="teacher" className="text-right">Teacher</Label>
+                <Input id="teacher" value={newSubject.teacher} onChange={e => setNewSubject({ ...newSubject, teacher: e.target.value })} className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="classes" className="text-right">Classes</Label>
+                <Input id="classes" value={newSubject.classes} onChange={e => setNewSubject({ ...newSubject, classes: e.target.value })} className="col-span-3" placeholder="e.g. 10-A, 10-B" required />
+              </div>
+              <DialogFooter><Button type="submit">Save changes</Button></DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="stat-card">

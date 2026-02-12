@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { Users, GraduationCap, School, CalendarCheck, TrendingUp, Award } from 'lucide-react';
 import StatCard from '@/components/StatCard';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { storage } from '@/lib/storage';
 
 const performanceData = [
   { month: 'Jan', avg: 72 }, { month: 'Feb', avg: 75 }, { month: 'Mar', avg: 68 },
@@ -29,6 +31,31 @@ const recentActivity = [
 ];
 
 const AdminDashboard = () => {
+  const [stats, setStats] = useState({
+    students: 0,
+    teachers: 0,
+    classes: 0,
+    attendance: "0%",
+    avgGpa: "0.00",
+    toppers: 0
+  });
+
+  useEffect(() => {
+    const students = storage.getStudents();
+    const users = storage.getUsers();
+    const classes = storage.getClasses();
+    const results = storage.getResults();
+
+    setStats({
+      students: students.length,
+      teachers: users.filter(u => u.role === 'teacher').length,
+      classes: classes.length,
+      attendance: students.length > 0 ? (students.reduce((acc, s) => acc + s.attendance, 0) / students.length).toFixed(1) + "%" : "0%",
+      avgGpa: results.length > 0 ? (results.reduce((acc, r) => acc + r.gpa, 0) / results.length).toFixed(2) : "0.00",
+      toppers: results.filter(r => r.rank === 1).length
+    });
+  }, []);
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -38,12 +65,12 @@ const AdminDashboard = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <StatCard title="Total Students" value="1,247" icon={GraduationCap} trend="12% from last year" trendUp color="primary" />
-        <StatCard title="Total Teachers" value="64" icon={Users} trend="3 new this term" trendUp color="accent" />
-        <StatCard title="Classes" value="42" icon={School} color="warning" />
-        <StatCard title="Attendance" value="94.2%" icon={CalendarCheck} trend="1.5% improvement" trendUp color="accent" />
-        <StatCard title="Avg GPA" value="3.42" icon={TrendingUp} trend="0.15 increase" trendUp color="primary" />
-        <StatCard title="Toppers" value="45" icon={Award} color="warning" />
+        <StatCard title="Total Students" value={stats.students.toString()} icon={GraduationCap} trend="12% from last year" trendUp color="primary" />
+        <StatCard title="Total Teachers" value={stats.teachers.toString()} icon={Users} trend="3 new this term" trendUp color="accent" />
+        <StatCard title="Classes" value={stats.classes.toString()} icon={School} color="warning" />
+        <StatCard title="Attendance" value={stats.attendance} icon={CalendarCheck} trend="1.5% improvement" trendUp color="accent" />
+        <StatCard title="Avg GPA" value={stats.avgGpa} icon={TrendingUp} trend="0.15 increase" trendUp color="primary" />
+        <StatCard title="Toppers" value={stats.toppers.toString()} icon={Award} color="warning" />
       </div>
 
       {/* Charts row */}

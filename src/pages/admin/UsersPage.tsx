@@ -1,24 +1,53 @@
-import { useState } from 'react';
-import { Search, Plus, MoreHorizontal, UserCheck, UserX, KeyRound } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Plus, MoreHorizontal, UserCheck, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-
-const mockUsers = [
-  { id: 1, name: 'Dr. Sarah Johnson', email: 'admin@school.com', role: 'admin', status: 'active' },
-  { id: 2, name: 'Mr. James Wilson', email: 'teacher@school.com', role: 'teacher', status: 'active' },
-  { id: 3, name: 'Ms. Linda Chen', email: 'linda@school.com', role: 'teacher', status: 'active' },
-  { id: 4, name: 'Mr. Robert Brown', email: 'robert@school.com', role: 'teacher', status: 'inactive' },
-  { id: 5, name: 'Emily Parker', email: 'student@school.com', role: 'student', status: 'active' },
-  { id: 6, name: 'Alex Martinez', email: 'alex@school.com', role: 'student', status: 'active' },
-  { id: 7, name: 'Sarah Williams', email: 'sarahw@school.com', role: 'student', status: 'active' },
-  { id: 8, name: 'David Lee', email: 'david@school.com', role: 'student', status: 'inactive' },
-];
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { storage, User } from '@/lib/storage';
+import { toast } from "sonner";
 
 const UsersPage = () => {
+  const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [open, setOpen] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    role: 'student' as 'admin' | 'teacher' | 'student',
+    status: 'active' as const,
+  });
 
-  const filtered = mockUsers.filter(u => {
+  useEffect(() => {
+    setUsers(storage.getUsers());
+  }, []);
+
+  const handleAddUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    storage.addUser(newUser);
+    setUsers(storage.getUsers());
+    setOpen(false);
+    setNewUser({ name: '', email: '', role: 'student', status: 'active' });
+    toast.success("User added successfully");
+  };
+
+  const filtered = users.filter(u => {
     const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
     const matchRole = roleFilter === 'all' || u.role === roleFilter;
     return matchSearch && matchRole;
@@ -31,7 +60,42 @@ const UsersPage = () => {
           <h1 className="page-header">User Management</h1>
           <p className="page-subtitle">Manage teachers, students, and administrators</p>
         </div>
-        <Button><Plus size={16} className="mr-1.5" /> Add User</Button>
+
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus size={16} className="mr-1.5" /> Add User</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New User</DialogTitle>
+              <DialogDescription>Enter user details below.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleAddUser} className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">Name</Label>
+                <Input id="name" value={newUser.name} onChange={e => setNewUser({ ...newUser, name: e.target.value })} className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="email" className="text-right">Email</Label>
+                <Input id="email" type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="role" className="text-right">Role</Label>
+                <Select value={newUser.role} onValueChange={(val: any) => setNewUser({ ...newUser, role: val })}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="student">Student</SelectItem>
+                    <SelectItem value="teacher">Teacher</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <DialogFooter><Button type="submit">Save changes</Button></DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="stat-card">

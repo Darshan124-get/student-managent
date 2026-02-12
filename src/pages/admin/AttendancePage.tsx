@@ -1,24 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, X, Minus } from 'lucide-react';
-
-const students = [
-  'Emily Parker', 'Alex Martinez', 'Sarah Williams', 'David Lee', 'Jessica Brown',
-  'Michael Johnson', 'Rachel Green', 'Tom Harris',
-];
+import { storage } from '@/lib/storage';
 
 type Status = 'present' | 'absent' | 'late';
 
 const AttendancePage = () => {
   const [date] = useState(new Date().toISOString().split('T')[0]);
-  const [attendance, setAttendance] = useState<Record<string, Status>>(
-    Object.fromEntries(students.map(s => [s, 'present']))
-  );
+  const [students, setStudents] = useState<string[]>([]);
+  const [attendance, setAttendance] = useState<Record<string, Status>>({});
+
+  useEffect(() => {
+    const studentList = storage.getStudents().map(s => s.name);
+    setStudents(studentList);
+
+    const savedAttendance = storage.getAttendance(date);
+    if (savedAttendance) {
+      setAttendance(savedAttendance);
+    } else {
+      // Initialize with present
+      setAttendance(Object.fromEntries(studentList.map(s => [s, 'present'])));
+    }
+  }, [date]);
 
   const toggle = (name: string) => {
     setAttendance(prev => {
       const current = prev[name];
       const next: Status = current === 'present' ? 'absent' : current === 'absent' ? 'late' : 'present';
-      return { ...prev, [name]: next };
+      const updated = { ...prev, [name]: next };
+      storage.saveAttendance(date, updated);
+      return updated;
     });
   };
 

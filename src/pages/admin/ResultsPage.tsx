@@ -1,18 +1,28 @@
+import { useState, useEffect } from 'react';
 import { Award, Download, CheckCircle, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-const results = [
-  { id: 1, name: 'Emily Parker', class: '10-A', total: 422, pct: 84.4, gpa: 3.65, grade: 'A', rank: 5, status: 'approved' },
-  { id: 2, name: 'Sarah Williams', class: '10-B', total: 452, pct: 90.4, gpa: 3.80, grade: 'A+', rank: 1, status: 'approved' },
-  { id: 3, name: 'Michael Johnson', class: '12-A', total: 465, pct: 93.0, gpa: 3.90, grade: 'A+', rank: 1, status: 'approved' },
-  { id: 4, name: 'Alex Martinez', class: '10-A', total: 373, pct: 74.6, gpa: 3.45, grade: 'B+', rank: 12, status: 'pending' },
-  { id: 5, name: 'David Lee', class: '11-A', total: 343, pct: 68.6, gpa: 3.20, grade: 'B', rank: 18, status: 'pending' },
-  { id: 6, name: 'Rachel Green', class: '12-B', total: 290, pct: 58.0, gpa: 2.90, grade: 'C+', rank: 25, status: 'pending' },
-];
+import { storage, ResultRecord } from '@/lib/storage';
+import { toast } from "sonner";
 
 const ResultsPage = () => {
+  const [results, setResults] = useState<ResultRecord[]>([]);
+
+  useEffect(() => {
+    setResults(storage.getResults());
+  }, []);
+
+  const handleApprove = (id: number) => {
+    const result = results.find(r => r.id === id);
+    if (result) {
+      const updated = { ...result, status: 'approved' as const };
+      storage.updateResult(updated);
+      setResults(storage.getResults());
+      toast.success(`Result for ${result.name} approved`);
+    }
+  };
+
   const passCount = results.filter(r => r.pct >= 40).length;
-  const passPct = ((passCount / results.length) * 100).toFixed(1);
+  const passPct = results.length > 0 ? ((passCount / results.length) * 100).toFixed(1) : "0.0";
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -82,7 +92,7 @@ const ResultsPage = () => {
                     </span>
                   </td>
                   <td className="py-3 px-3 text-right">
-                    {r.status === 'pending' && <Button size="sm" variant="outline">Approve</Button>}
+                    {r.status === 'pending' && <Button size="sm" variant="outline" onClick={() => handleApprove(r.id)}>Approve</Button>}
                   </td>
                 </tr>
               ))}

@@ -1,18 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Save, Lock } from 'lucide-react';
-
-const students = [
-  { id: 1, name: 'Emily Parker', rollNo: '101', math: 88, science: 76, english: 92, history: 81, physics: 85 },
-  { id: 2, name: 'Alex Martinez', rollNo: '102', math: 72, science: 68, english: 85, history: 78, physics: 70 },
-  { id: 3, name: 'Sarah Williams', rollNo: '201', math: 95, science: 89, english: 91, history: 85, physics: 92 },
-  { id: 4, name: 'David Lee', rollNo: '301', math: 65, science: 72, english: 78, history: 60, physics: 68 },
-  { id: 5, name: 'Jessica Brown', rollNo: '302', math: 82, science: 80, english: 88, history: 75, physics: 79 },
-];
+import { storage, MarksRecord } from '@/lib/storage';
+import { toast } from "sonner";
 
 const MarksPage = () => {
   const [locked, setLocked] = useState(false);
+  const [students, setStudents] = useState<MarksRecord[]>([]);
+
+  useEffect(() => {
+    setStudents(storage.getMarks());
+  }, []);
+
+  const handleSave = () => {
+    storage.saveMarks(students);
+    toast.success("Marks saved successfully");
+  };
+
+  const updateMark = (id: number, subject: keyof MarksRecord, value: number) => {
+    setStudents(prev => prev.map(s =>
+      s.studentId === id ? { ...s, [subject]: value } : s
+    ));
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -25,7 +35,7 @@ const MarksPage = () => {
           <Button variant="outline" onClick={() => setLocked(!locked)}>
             <Lock size={16} className="mr-1.5" /> {locked ? 'Unlock' : 'Lock'} Marks
           </Button>
-          <Button disabled={locked}><Save size={16} className="mr-1.5" /> Save</Button>
+          <Button disabled={locked} onClick={handleSave}><Save size={16} className="mr-1.5" /> Save</Button>
         </div>
       </div>
 
@@ -54,12 +64,20 @@ const MarksPage = () => {
               {students.map(s => {
                 const total = s.math + s.science + s.english + s.history + s.physics;
                 return (
-                  <tr key={s.id} className="border-b border-border/50">
+                  <tr key={s.studentId} className="border-b border-border/50">
                     <td className="py-3 px-3 font-medium text-foreground">{s.name}</td>
                     <td className="py-3 px-3 text-muted-foreground">{s.rollNo}</td>
-                    {['math', 'science', 'english', 'history', 'physics'].map(subj => (
+                    {(['math', 'science', 'english', 'history', 'physics'] as const).map(subj => (
                       <td key={subj} className="py-2 px-1 text-center">
-                        <Input type="number" min={0} max={100} defaultValue={(s as any)[subj]} disabled={locked} className="w-16 mx-auto text-center h-8 text-sm" />
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={s[subj]}
+                          onChange={(e) => updateMark(s.studentId, subj, parseInt(e.target.value) || 0)}
+                          disabled={locked}
+                          className="w-16 mx-auto text-center h-8 text-sm"
+                        />
                       </td>
                     ))}
                     <td className="py-3 px-2 text-center font-semibold text-foreground">{total}</td>

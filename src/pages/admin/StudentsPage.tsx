@@ -1,20 +1,53 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Plus, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-
-const students = [
-  { id: 1, name: 'Emily Parker', class: '10-A', rollNo: '101', gpa: 3.65, attendance: 92, status: 'active' },
-  { id: 2, name: 'Alex Martinez', class: '10-A', rollNo: '102', gpa: 3.45, attendance: 88, status: 'active' },
-  { id: 3, name: 'Sarah Williams', class: '10-B', rollNo: '201', gpa: 3.80, attendance: 95, status: 'active' },
-  { id: 4, name: 'David Lee', class: '11-A', rollNo: '301', gpa: 3.20, attendance: 85, status: 'active' },
-  { id: 5, name: 'Jessica Brown', class: '11-A', rollNo: '302', gpa: 3.55, attendance: 91, status: 'active' },
-  { id: 6, name: 'Michael Johnson', class: '12-A', rollNo: '401', gpa: 3.90, attendance: 97, status: 'active' },
-  { id: 7, name: 'Rachel Green', class: '12-B', rollNo: '501', gpa: 2.90, attendance: 78, status: 'inactive' },
-];
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { storage, Student } from '@/lib/storage';
+import { toast } from "sonner";
 
 const StudentsPage = () => {
+  const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const [newStudent, setNewStudent] = useState({
+    name: '',
+    class: '',
+    rollNo: '',
+    gpa: 0,
+    attendance: 0,
+    status: 'active' as const,
+  });
+
+  useEffect(() => {
+    setStudents(storage.getStudents());
+  }, []);
+
+  const handleAddStudent = (e: React.FormEvent) => {
+    e.preventDefault();
+    storage.addStudent(newStudent);
+    setStudents(storage.getStudents());
+    setOpen(false);
+    setNewStudent({
+      name: '',
+      class: '',
+      rollNo: '',
+      gpa: 0,
+      attendance: 0,
+      status: 'active',
+    });
+    toast.success("Student added successfully");
+  };
+
   const filtered = students.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || s.class.includes(search) || s.rollNo.includes(search));
 
   return (
@@ -24,7 +57,92 @@ const StudentsPage = () => {
           <h1 className="page-header">Student Management</h1>
           <p className="page-subtitle">View and manage all enrolled students</p>
         </div>
-        <Button><Plus size={16} className="mr-1.5" /> Add Student</Button>
+
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus size={16} className="mr-1.5" /> Add Student</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Student</DialogTitle>
+              <DialogDescription>
+                Enter the details of the new student here. Click save when you're done.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleAddStudent} className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  id="name"
+                  value={newStudent.name}
+                  onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="rollNo" className="text-right">
+                  Roll No
+                </Label>
+                <Input
+                  id="rollNo"
+                  value={newStudent.rollNo}
+                  onChange={(e) => setNewStudent({ ...newStudent, rollNo: e.target.value })}
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="class" className="text-right">
+                  Class
+                </Label>
+                <Input
+                  id="class"
+                  value={newStudent.class}
+                  onChange={(e) => setNewStudent({ ...newStudent, class: e.target.value })}
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="gpa" className="text-right">
+                  GPA
+                </Label>
+                <Input
+                  id="gpa"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="4"
+                  value={newStudent.gpa}
+                  onChange={(e) => setNewStudent({ ...newStudent, gpa: parseFloat(e.target.value) })}
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="attendance" className="text-right">
+                  Attendance (%)
+                </Label>
+                <Input
+                  id="attendance"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={newStudent.attendance}
+                  onChange={(e) => setNewStudent({ ...newStudent, attendance: parseInt(e.target.value) })}
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <DialogFooter>
+                <Button type="submit">Save changes</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="stat-card">
