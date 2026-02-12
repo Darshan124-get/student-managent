@@ -13,7 +13,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => void;
   forgotPassword: (email: string) => Promise<void>;
 }
@@ -45,7 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user]);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<User> => {
     // Simulate API delay
     await new Promise(r => setTimeout(r, 800));
     const mockUser = MOCK_USERS[email];
@@ -54,6 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     const { password: _, ...userData } = mockUser;
     setUser(userData);
+    return userData;
   }, []);
 
   const logout = useCallback(() => {

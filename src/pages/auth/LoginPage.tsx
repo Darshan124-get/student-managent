@@ -20,9 +20,8 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      const user = await login(email, password);
       // Navigate based on role
-      const user = JSON.parse(localStorage.getItem('sms_user') || '{}');
       navigate(`/${user.role}`);
     } catch (err: any) {
       setError(err.message || 'Login failed');
